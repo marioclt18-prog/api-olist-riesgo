@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import pandas as pd
 import joblib
-from preparacion import PreparadorOlist
 from typing import Optional
 
 app = FastAPI(title="API de Riesgo de Mala Reseña - Olist")
