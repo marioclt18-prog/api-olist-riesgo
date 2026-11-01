@@ -3,15 +3,16 @@ from pydantic import BaseModel, Field
 import pandas as pd
 import joblib
 from typing import Optional
+from preparacion import crear_variables
 
 app = FastAPI(title="API de Riesgo de Mala Reseña - Olist")
 
-# Cargamos el modelo y el umbral al iniciar la API
-modelo = joblib.load("modelo_riesgo.joblib")
+# Cargamos las 3 piezas
+preprocesador = joblib.load("preprocesador.joblib")
+modelo_xgb = joblib.load("modelo_xgb.joblib")
 with open("umbral.txt", "r") as f:
     UMBRAL = float(f.read())
 
-# Definimos el "contrato" de datos usando Pydantic
 class PedidoInput(BaseModel):
     order_id: str
     order_purchase_timestamp: str
@@ -22,7 +23,7 @@ class PedidoInput(BaseModel):
     estado_cliente: str
     n_items: int
     n_vendedores: int
-    precio_total: float = Field(..., ge=0) # No precios negativos (responde 422)
+    precio_total: float = Field(..., ge=0)
     flete_total: float = Field(..., ge=0)
     peso_total_g: float = Field(..., ge=0)
     fotos_promedio: float = Field(..., ge=0)
@@ -33,18 +34,22 @@ class PedidoInput(BaseModel):
 
 @app.get("/")
 def inicio():
-    return {"mensaje": "La API de Olist está viva y coleando"}
+    return {"mensaje": "La API de Olist está viva"}
 
 @app.post("/riesgo")
 def predecir_riesgo(pedido: PedidoInput):
     try:
-        # Convertimos el JSON a un DataFrame (como el que espera el modelo)
+        # 1. Convertimos a DataFrame
         datos = pd.DataFrame([pedido.model_dump()])
         
-        # Predecimos la probabilidad
-        prob = modelo.predict_proba(datos)[0][1]
+        # 2. Aplicamos nuestra función de limpieza
+        datos_limpios = crear_variables(datos)
         
-        # Evaluamos si supera el umbral
+        # 3. Pasamos por el preprocesador (Escalador + OneHotEncoder)
+        datos_procesados = preprocesador.transform(datos_limpios)
+        
+        # 4. Predecimos con el modelo puro
+        prob = modelo_xgb.predict_proba(datos_procesados)[0][1]
         es_riesgo_alto = bool(prob >= UMBRAL)
         
         return {
