@@ -9,3 +9,5 @@ joblib
 dill
 streamlit
 requests
+matplotlib
+seaborn
