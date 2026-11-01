@@ -43,3 +43,9 @@ class PreparadorOlist(BaseEstimator, TransformerMixin):
         return self
     def transform(self, X):
         return crear_variables(X)
+    def __sklearn_tags__(self):
+        # Esto soluciona el error de compatibilidad
+        try:
+            return super().__sklearn_tags__()
+        except AttributeError:
+            return {}
