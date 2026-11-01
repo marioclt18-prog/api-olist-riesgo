@@ -38,14 +38,8 @@ def crear_variables(df):
     
     return df[columnas_modelo]
 
-class PreparadorOlist(BaseEstimator, TransformerMixin):
+class PreparadorOlist:
     def fit(self, X, y=None):
         return self
     def transform(self, X):
         return crear_variables(X)
-    def __sklearn_tags__(self):
-        # Esto soluciona el error de compatibilidad
-        try:
-            return super().__sklearn_tags__()
-        except AttributeError:
-            return {}
